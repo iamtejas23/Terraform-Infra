@@ -1,6 +1,4 @@
-# Kops-Terraform-Infra
-
-To create Kubernetes infrastructure on AWS using `kops`, `Terraform`, and Amazon Linux EC2 instances, you'll need a `main.tf` file for Terraform that sets up the necessary AWS infrastructure. Below is a basic example to get you started. This configuration will set up a VPC, subnets, and security groups. You might need to adjust it based on your specific requirements and environment.
+# Terraform-Infra for app-servers
 
 ```hcl
 # Specify the AWS provider
