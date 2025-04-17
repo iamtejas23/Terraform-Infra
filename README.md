@@ -28,7 +28,7 @@ resource "aws_internet_gateway" "main" {
 resource "aws_subnet" "public_1" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = "10.0.1.0/24"
-  availability_zone = "us-east-1a"  # Updated to us-east-1
+  availability_zone = "us-east-1a"
   map_public_ip_on_launch = true
   tags = {
     Name = "my-public-subnet-1"
@@ -38,13 +38,12 @@ resource "aws_subnet" "public_1" {
 resource "aws_subnet" "public_2" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = "10.0.2.0/24"
-  availability_zone = "us-east-1b"  # Updated to us-east-1
+  availability_zone = "us-east-1b"
   map_public_ip_on_launch = true
   tags = {
     Name = "my-public-subnet-2"
   }
 }
-
 
 # Create a route table
 resource "aws_route_table" "public" {
@@ -97,7 +96,7 @@ resource "aws_security_group" "web-sg" {
 # Create a launch template
 resource "aws_launch_template" "web" {
   name_prefix   = "web-template"
-  image_id      = "ami-02c21308fed24a8ab" #valid Amazon Linux 2 AMI ID
+  image_id      = "ami-07a6f770277670015"  # Amazon Linux AMI ID as per your request
   instance_type = "t3.micro"
 
   user_data = base64encode(<<-EOF
@@ -105,7 +104,7 @@ resource "aws_launch_template" "web" {
               amazon-linux-extras install -y docker
               service docker start
               usermod -a -G docker ec2-user
-              docker run -d -p 80:80 iamtejas23/space:latest
+              docker run -d -p 80:3000 iamtejas23/zomato-clone:latest
               EOF
   )
 
@@ -118,7 +117,6 @@ resource "aws_launch_template" "web" {
     Name = "web-instance"
   }
 }
-
 
 # Create an autoscaling group
 resource "aws_autoscaling_group" "web" {
@@ -154,18 +152,6 @@ resource "aws_lb" "web" {
   }
 }
 
-# Create a load balancer listener
-resource "aws_lb_listener" "web" {
-  load_balancer_arn = aws_lb.web.arn
-  port              = "80"
-  protocol          = "HTTP"
-
-  default_action {
-    type = "forward"
-    target_group_arn = aws_lb_target_group.web.arn
-  }
-}
-
 # Create a target group
 resource "aws_lb_target_group" "web" {
   name        = "web-targets"
@@ -183,10 +169,26 @@ resource "aws_lb_target_group" "web" {
   }
 }
 
+# Create a load balancer listener
+resource "aws_lb_listener" "web" {
+  load_balancer_arn = aws_lb.web.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type = "forward"
+    target_group_arn = aws_lb_target_group.web.arn
+  }
+}
+
 # Attach the autoscaling group to the target group
 resource "aws_autoscaling_attachment" "asg_attachment" {
   autoscaling_group_name = aws_autoscaling_group.web.name
-  lb_target_group_arn    = aws_lb_target_group.web.arn
+  lb_target_group_arn   = aws_lb_target_group.web.arn
+  depends_on = [
+    aws_autoscaling_group.web,
+    aws_lb_target_group.web
+  ]
 }
 
 # Output the DNS name of the load balancer
